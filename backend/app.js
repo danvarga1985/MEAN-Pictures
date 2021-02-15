@@ -1,10 +1,24 @@
 const express = require("express");
-// const {
-//   updateImportEqualsDeclaration
-// } = require('typescript');
 const bodyParser = require("body-parser")
+const mongoose = require("mongoose");
+const Post = require('./model/post')
 
 const app = express();
+
+// user-password ... database name(mean-app) ? auth db (authSource=admin)
+const uri = 'mongodb://root:root@localhost:27017/mean-app?authSource=admin';
+
+// 'useUnifiedTopology' - needed, otherwise error
+mongoose.connect(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => {
+    console.log('Connected to database');
+  })
+  .catch(() => {
+    console.log("Connection failed");
+  });
 
 // For json "deserialization"
 app.use(bodyParser.json());
@@ -14,43 +28,55 @@ app.use(bodyParser.urlencoded({
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE, OPTIONS"
+  );
   next();
-})
+});
 
 app.post("/api/posts", (req, res, next) => {
-  const post = req.body;
-  console.log(post);
-  res.status(201).json({
-    message: 'Post added successfully'
+  const post = new Post({
+    title: req.body.title,
+    content: req.body.content
   });
+
+  // 'save' provided by mongoose - creates a new query to insert a new entry
+  post.save()
+    .then(createdPost => {
+      res.status(201).json({
+        message: 'Post added successfully',
+        postId: createdPost._id
+      });
+    });
+
 })
 
 app.get('/api/posts', (req, res, next) => {
-  const posts = [{
-      id: guidGenerator(),
-      title: 'First server-side post',
-      content: 'This is coming from the server'
-    },
-    {
-      id: guidGenerator(),
-      title: 'Second server-side post',
-      content: 'This is coming from the server'
-    }
+  Post.find()
+    .then(documents => {
+      console.log(documents);
+      res.status(200).json({
+        message: 'Posts fetched successfully!',
+        posts: documents
+      });
+    });
+});
 
-  ];
-  res.status(200).json({
-    message: 'Posts fetched successfully!',
-    posts: posts
-  });
+app.delete('/api/posts/:id', (req, res, next) => {
+  Post.deleteOne({
+      _id: req.params.id
+    })
+    .then(result => {
+      console.log(result);
+      res.status(200).json({
+        message: "Post with id: " + req.params.id + " deleted"
+      })
+    });
 });
 
 module.exports = app;
-
-function guidGenerator() {
-  var S4 = function () {
-    return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-  };
-  return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
-}
