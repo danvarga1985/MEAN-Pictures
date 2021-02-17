@@ -1,14 +1,15 @@
+<mat-spinner *ngIf="isLoading"></mat-spinner>
 <!-- 'multi' enables multiple open panels. -->
-<mat-accordion multi=true *ngIf="posts.length > 0"> 
+<mat-accordion multi=true *ngIf="posts.length > 0 && !isLoading">
     <mat-expansion-panel *ngFor="let post of posts">
         <mat-expansion-panel-header>
             {{ post.title }}
         </mat-expansion-panel-header>
-            {{ post.content }}
-            <mat-action-row>
-                <button mat-button color="primary">EDIT</button>
-                <button mat-button color="warn" (click)="onDeletePost(post.id)">DELETE</button>
-            </mat-action-row>
+        {{ post.content }}
+        <mat-action-row>
+            <a mat-button color="primary" [routerLink]="['/edit', post.id]">EDIT</a>
+            <button mat-button color="warn" (click)="onDeletePost(post.id)">DELETE</button>
+        </mat-action-row>
     </mat-expansion-panel>
 </mat-accordion>
-<p class="info-text mat-h1" *ngIf="posts.length < 1">No posts added yet!</p>
+<p class="info-text mat-h1" *ngIf="posts.length < 1 && !isLoading">No posts added yet!</p>

@@ -1,8 +1,9 @@
 import { Injectable } from "@angular/core";
 import { Post } from "./post.model";
-import { Subject } from "rxjs"
+import { Observable, Subject } from "rxjs"
 import { HttpClient } from "@angular/common/http";
 import { map } from 'rxjs/operators';
+import { Router } from "@angular/router";
 
 @Injectable({
     providedIn: 'root'
@@ -11,11 +12,14 @@ export class PostService {
     private posts: Post[] = [];
     private postsUpdated = new Subject<Post[]>();
 
-    constructor(private http: HttpClient) { }
+    constructor(
+        private http: HttpClient,
+        private router: Router) { }
 
 
-    getPosts() {
-        this.http.get<{ id: string, message: string, posts: any }>('http://localhost:3000/api/posts')
+    getPosts(): void {
+        this.http
+            .get<{ id: string, message: string, posts: any }>('http://localhost:3000/api/posts')
             .pipe(map((postData) => {
                 // Wrapped as an Observable
                 return postData.posts.map(post => {
@@ -29,15 +33,19 @@ export class PostService {
             }))
             .subscribe((transformedPosts) => {
                 this.posts = transformedPosts;
-                this.postsUpdated.next(this.posts);
+                this.postsUpdated.next([...this.posts]);
             });
     }
 
-    getPostUpdateListener() {
+    getPostUpdateListener(): Observable<Post[]> {
         return this.postsUpdated.asObservable();
     }
 
-    addPost(aTitle: string, aContent: string) {
+    getPost(postId: string) {
+        return this.http.get<{ _id: string, title: string, content: string }>('http://localhost:3000/api/posts/' + postId);
+    }
+
+    addPost(aTitle: string, aContent: string): void {
         const newPost: Post = { id: null, title: aTitle, content: aContent };
 
         this.http
@@ -50,16 +58,41 @@ export class PostService {
 
                 this.posts.push(newPost);
                 this.postsUpdated.next([...this.posts]);
+
+                this.navigateToRoot();
+            });
+
+    }
+
+    updatePost(aId: string, aTitle: string, aContent: string): void {
+        const updatedPost: Post = { id: aId, title: aTitle, content: aContent };
+        this.http
+            .put('http://localhost:3000/api/posts/' + aId, updatedPost)
+            .subscribe(response => {
+                // For consistency' sake - updating the Post array won't be necessary in the PostCreate component.
+                const upToDatePosts = [...this.posts];
+                const oldPostIndex = upToDatePosts.findIndex(p => p.id === updatedPost.id);
+
+                upToDatePosts[oldPostIndex] = updatedPost;
+
+                this.posts = upToDatePosts;
+                this.postsUpdated.next([...this.posts]);
+
+                this.navigateToRoot();
             });
     }
 
-    deletePost(postId: string) {
+    deletePost(postId: string): void {
         this.http
             .delete('http://localhost:3000/api/posts/' + postId)
             .subscribe(() => {
-                const updatedPosts = this.posts.filter(post => post.id != postId);
-                this.posts = updatedPosts;
+                const upToDatePosts = this.posts.filter(post => post.id !== postId);
+                this.posts = upToDatePosts;
                 this.postsUpdated.next([...this.posts]);
             })
+    }
+
+    private navigateToRoot(): void {
+        this.router.navigate(['/']);
     }
 }

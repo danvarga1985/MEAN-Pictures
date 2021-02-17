@@ -1,1 +1,12 @@
-<mat-toolbar color="primary">MyMessages</mat-toolbar>
+<mat-toolbar color="primary">
+    <span>
+        <a routerLink="/">MyMessages</a>
+    </span>
+    <span class="spacer"></span>
+    <ul>
+        <li>
+            <!-- 'routerLinkActive' can directly use Angular Material classes for styling -->
+            <a mat-button routerLink="/create" routerLinkActive="mat-accent">New Post</a>
+        </li>
+    </ul>
+</mat-toolbar>
