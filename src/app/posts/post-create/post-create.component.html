@@ -1,17 +1,22 @@
 <mat-card>
     <mat-spinner *ngIf="isLoading"></mat-spinner>
-    <form (submit)="onSavePost(postForm)" #postForm="ngForm" *ngIf="!isLoading">
+    <form [formGroup]="form" (submit)="onSavePost()" *ngIf="!isLoading">
         <mat-form-field>
-            <input matInput type="text" name="title" [ngModel]="post?.title" required minlength="3" #title="ngModel" 
-            placeholder="Post Title">
-            <mat-error *ngIf="title.invalid">Please enter a post title!</mat-error>
+            <input matInput type="text" formControlName="title" placeholder="Post Title">
+            <mat-error *ngIf="form.get('title').invalid">Please enter a post title!</mat-error>
         </mat-form-field>
+        <div>
+            <!-- Proxy the file picker with the button. Filepicker is hidden(css), 
+                it's functionality is activated by the button -->
+            <button mat-stroked-button type="button" (click)="filePicker.click()">Pick Image</button>
+            <input type="file" #filePicker (change)="onImagePicked($event)">
+        </div>
+        <div class="image-preview" *ngIf="imagePreview !== '' && imagePreview">
+            <img [src]="imagePreview" [alt]="form.value.title">
+        </div>
         <mat-form-field>
-            <!-- The Elvis operator (post?.content) forces Angular to check if the object exists, and creates
-            a blank field if it doesn't. -->
-            <textarea matInput rows="4" name="content" [ngModel]="post?.content" required #content="ngModel"
-            placeholder="Post Content"></textarea>
-            <mat-error *ngIf="content.invalid">Please fill out the form!</mat-error>
+            <textarea matInput rows="4" formControlName="content" placeholder="Post Content"></textarea>
+            <mat-error *ngIf="form.get('content').invalid">Please fill out the form!</mat-error>
         </mat-form-field>
         <button mat-raised-button color="primary" type="submit">Save Post</button>
     </form>
