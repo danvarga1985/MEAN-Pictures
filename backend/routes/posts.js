@@ -90,12 +90,28 @@ router.put(
   });
 
 router.get('', (req, res, next) => {
-  Post.find()
+  // Pagination
+  const pageSize = +req.query.pagesize;
+  const currentPage = +req.query.page;
+  const postQuery = Post.find(); // Only gets executed when calling 'then()'
+  let fetchedPosts;
+
+  if (pageSize && currentPage) {
+    postQuery
+      .skip(pageSize * (currentPage - 1)) // Ignore the first 'n' elements
+      .limit(pageSize); // Narrow the result to the number of items to be displayed on the page
+  }
+
+  postQuery
     .then(documents => {
-      console.log(documents);
+      fetchedPosts = documents;
+      return Post.count();
+    })
+    .then(count => {
       res.status(200).json({
-        message: 'Posts fetched successfully!',
-        posts: documents
+        message: "Posts fetched successfully!",
+        posts: fetchedPosts,
+        maxPosts: count
       });
     });
 });

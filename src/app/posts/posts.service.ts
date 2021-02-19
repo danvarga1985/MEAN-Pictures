@@ -10,35 +10,42 @@ import { Post } from "./post.model";
 })
 export class PostService {
   private posts: Post[] = [];
-  private postsUpdated = new Subject<Post[]>();
+  private postsUpdated = new Subject<{ posts: Post[], postCount: number }>();
 
   constructor(
     private http: HttpClient,
     private router: Router) { }
 
 
-  getPosts(): void {
+  getPosts(postsPerPage: number, currentPage: number): void {
+    const queryParams = `?pagesize=${postsPerPage}&page=${currentPage}`;
+
     this.http
-      .get<{ id: string, message: string, posts: any }>('http://localhost:3000/api/posts')
+      .get<{ id: string, message: string, posts: any, maxPosts: number }>('http://localhost:3000/api/posts' + queryParams)
       .pipe(map((postData) => {
         // Wrapped as an Observable
-        return postData.posts.map(post => {
-          // Transform mongodb 'ObjectId' field (_id) according to the 'Post' model (id).
-          return {
-            title: post.title,
-            content: post.content,
-            id: post._id,
-            imagePath: post.imagePath
-          };
-        });
+        return {
+          posts: postData.posts.map(post => {
+            // Transform mongodb 'ObjectId' field (_id) according to the 'Post' model (id).
+            return {
+              title: post.title,
+              content: post.content,
+              id: post._id,
+              imagePath: post.imagePath
+            };
+          }), maxPosts: postData.maxPosts
+        };
       }))
-      .subscribe((transformedPosts) => {
-        this.posts = transformedPosts;
-        this.postsUpdated.next([...this.posts]);
+      .subscribe((transformedPostsData) => {
+        this.posts = transformedPostsData.posts;
+        this.postsUpdated.next({
+          posts: [...this.posts],
+          postCount: transformedPostsData.maxPosts
+        });
       });
   }
 
-  getPostUpdateListener(): Observable<Post[]> {
+  getPostUpdateListener(): Observable<{posts: Post[], postCount: number}> {
     return this.postsUpdated.asObservable();
   }
 
@@ -59,16 +66,6 @@ export class PostService {
     this.http
       .post<{ message: string, post: Post }>('http://localhost:3000/api/posts', postData)
       .subscribe((responseData) => {
-        const post: Post = {
-          id: responseData.post.id,
-          title: aTitle,
-          content: aContent,
-          imagePath: responseData.post.imagePath
-        };
-
-        this.posts.push(post);
-        this.postsUpdated.next([...this.posts]);
-
         this.navigateToRoot();
       });
 
@@ -95,35 +92,13 @@ export class PostService {
     this.http
       .put('http://localhost:3000/api/posts/' + aId, postData)
       .subscribe(response => {
-        // For consistency' sake - updating the Post array won't be necessary in the PostCreate component.
-        const upToDatePosts = [...this.posts];
-        const oldPostIndex = upToDatePosts.findIndex(p => p.id === aId);
-
-        const post: Post = {
-          id: aId,
-          title: aTitle,
-          content: aContent,
-          //TODO: fix empty path
-          imagePath: ''
-        }
-
-        upToDatePosts[oldPostIndex] = post;
-
-        this.posts = upToDatePosts;
-        this.postsUpdated.next([...this.posts]);
-
         this.navigateToRoot();
       });
   }
 
-  deletePost(postId: string): void {
-    this.http
-      .delete('http://localhost:3000/api/posts/' + postId)
-      .subscribe(() => {
-        const upToDatePosts = this.posts.filter(post => post.id !== postId);
-        this.posts = upToDatePosts;
-        this.postsUpdated.next([...this.posts]);
-      })
+  deletePost(postId: string): Observable<Object> {
+    return this.http
+      .delete('http://localhost:3000/api/posts/' + postId);
   }
 
   private navigateToRoot(): void {
