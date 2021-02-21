@@ -1,18 +1,21 @@
 <mat-toolbar color="primary">
-    <span>
-        <a routerLink="/">MyMessages</a>
-    </span>
-    <span class="spacer"></span>
-    <ul>
-        <li>
-            <!-- 'routerLinkActive' can directly use Angular Material classes for styling -->
-            <a mat-button routerLink="/create" routerLinkActive="mat-accent">New Post</a>
-        </li>
-        <li>
-            <a mat-button routerLink="/login" routerLinkActive="mat-accent">Login</a>
-        </li>
-        <li>
-            <a mat-button routerLink="/signup" routerLinkActive="mat-accent">Signup</a>
-        </li>
-    </ul>
+  <span>
+    <a routerLink="/">MyMessages</a>
+  </span>
+  <span class="spacer"></span>
+  <ul>
+    <li *ngIf="isUserAuthenticated">
+      <!-- 'routerLinkActive' can directly use Angular Material classes for styling -->
+      <a mat-button routerLink="/create" routerLinkActive="mat-accent">New Post</a>
+    </li>
+    <li *ngIf="!isUserAuthenticated">
+      <a mat-button routerLink="/login" routerLinkActive="mat-accent">Login</a>
+    </li>
+    <li *ngIf="!isUserAuthenticated">
+      <a mat-button routerLink="/signup" routerLinkActive="mat-accent">Signup</a>
+    </li>
+    <li *ngIf="isUserAuthenticated">
+      <button mat-button (click)="onLogout()">Logout</button>
+    </li>
+  </ul>
 </mat-toolbar>
