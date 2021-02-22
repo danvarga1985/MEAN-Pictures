@@ -45,7 +45,8 @@ router.post(
     const post = new Post({
       title: req.body.title,
       content: req.body.content,
-      imagePath: url + '/images/' + req.file.filename
+      imagePath: url + '/images/' + req.file.filename,
+      creator: req.userData.userId
     });
 
     // 'save' provided by mongoose - creates a new query to insert a new entry
@@ -79,16 +80,24 @@ router.put(
       _id: req.body.id,
       title: req.body.title,
       content: req.body.content,
-      imagePath: imagePath
+      imagePath: imagePath,
+      creator: req.userData.userId
     })
     Post.updateOne({
-        _id: req.params.id
+        _id: req.params.id,
+        creator: req.userData.userId
       }, updatedPost)
       .then(result => {
-        console.log(result);
-        res.status(200).json({
-          message: 'Update successful'
-        });
+        if (result.nModified > 0) {
+          console.log(result);
+          res.status(200).json({
+            message: 'Update successful'
+          });
+        } else {
+          res.status(401).json({
+            message: 'Not authorized'
+          })
+        }
       })
   });
 
@@ -138,13 +147,20 @@ router.delete('/:id',
   checkAuth,
   (req, res, next) => {
     Post.deleteOne({
-        _id: req.params.id
+        _id: req.params.id,
+        creator: req.userData.userId
       })
       .then(result => {
-        console.log(result);
-        res.status(200).json({
-          message: 'Post with id: ' + req.params.id + ' deleted'
-        })
+        if (result.n > 0) {
+          console.log(result);
+          res.status(200).json({
+            message: 'Post with id: ' + req.params.id + ' deleted'
+          })
+        } else {
+          res.status(401).json({
+            message: 'Not authorized'
+          })
+        }
       });
   });
 

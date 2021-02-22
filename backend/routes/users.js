@@ -31,16 +31,19 @@ router.post('/signup', (req, res, next) => {
 });
 
 router.post('/login', (req, res, next) => {
+  let fetchedUser;
   User.findOne({
       email: req.body.email
     })
-    .then(user => { //TODO: figure out why this works! 'user' should not be accessible from the chained then-blocks.
-      console.log('User logged in:' + user);
+    .then(user => {
       if (!user) {
         return res.status(401).json({
           message: 'Authentication Failed!'
         });
       }
+
+      fetchedUser = user;
+      console.log('User logged in:' + fetchedUser);
 
       // Compare the stored hash value with the given passwords hashed value
       return bcrypt.compare(req.body.password, user.password);
@@ -56,15 +59,16 @@ router.post('/login', (req, res, next) => {
       // Success
       // Create a new token based on the input-data
       const token = jwt.sign({
-        email: user.email,
-        userId: user._id
+        email: fetchedUser.email,
+        userId: fetchedUser._id
       }, 'secret_this_should_be_longer', {
         expiresIn: '1h'
       });
 
       res.status(200).json({
         token: token,
-        expiresIn: 3600
+        expiresIn: 3600,
+        userId: fetchedUser._id
       })
 
     })

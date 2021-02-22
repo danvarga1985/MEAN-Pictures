@@ -20,6 +20,7 @@ export class PostListComponent implements OnInit, OnDestroy {
   private postSubscription: Subscription;
   private authStatusSubscription: Subscription;
   isUserAuthenticated = false;
+  userId: string;
 
   // Public objects in the constructor are directly accessible from the template - unadvisable.
   constructor(public postService: PostService, private authService: AuthService) {
@@ -47,6 +48,7 @@ export class PostListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.isLoading = true;
     this.postService.getPosts(this.postsPerPage, this.currentPage);
+    this.userId = this.authService.getUserId();
 
     this.postSubscription = this.postService.getPostUpdateListener()
       .subscribe((postData: { posts: Post[], postCount: number }) => {
@@ -58,6 +60,7 @@ export class PostListComponent implements OnInit, OnDestroy {
     this.authStatusSubscription = this.authService.getAuthStatusListener()
       .subscribe(isAuthenticated => {
         this.isUserAuthenticated = isAuthenticated;
+        this.userId = this.authService.getUserId();
       });
   }
 
