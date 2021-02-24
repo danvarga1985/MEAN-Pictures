@@ -47,7 +47,8 @@ exports.updatePost = (req, res, next) => {
       creator: req.userData.userId
     }, updatedPost)
     .then(result => {
-      if (result.nModified > 0) {
+      // Check if the Post were found.
+      if (result.n > 0) {
         console.log(result);
         res.status(200).json({
           message: 'Update successful'
