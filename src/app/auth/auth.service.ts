@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
-import { Injectable, OnInit } from "@angular/core";
+import { Injectable } from "@angular/core";
 import { Router } from "@angular/router";
-import { Observable, ReplaySubject, Subject } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { AuthData } from "./auth-data.model";
 
 @Injectable({
@@ -13,17 +13,28 @@ export class AuthService {
   private isAuthenticated = false;
   private tokenTimer: NodeJS.Timer;
   private userId: string;
+  // Provide message for the error component - default error message
+  private interceptorStream$ = new BehaviorSubject('An unknown error occurred');
+
+  getInterceptorStreamListener$() {
+    return this.interceptorStream$.asObservable();
+  }
+
+  emitErrorMessage(message: string): void {
+    this.interceptorStream$.next(message);
+  }
 
   constructor(private http: HttpClient, private router: Router) { }
 
-  createUser(aEmail: string, aPassword: string): void {
+  createUser(aEmail: string, aPassword: string) {
     const authData: AuthData = { email: aEmail, password: aPassword };
 
     this.http.post('http://localhost:3000/api/user/signup', authData)
-      .subscribe(response => {
-        console.log(response);
-        this.navigateToRoot();
-      })
+      .subscribe(() => {
+        this.navigateToLogin();
+      }, error => {
+        this.authStatusListener.next(false);
+      });
   }
 
   login(aEmail: string, aPassword: string): void {
@@ -48,6 +59,8 @@ export class AuthService {
           this.saveAuthData(responseToken, expirationDate, this.userId);
           this.navigateToRoot();
         }
+      }, error => {
+        this.authStatusListener.next(false);
       });
   }
 
@@ -77,6 +90,10 @@ export class AuthService {
     this.router.navigate(['/']);
   }
 
+  private navigateToLogin(): void {
+    this.router.navigate(['/login']);
+  }
+
   autoAuthUser(): void {
     const authInformation = this.getAuthData();
 
@@ -94,10 +111,6 @@ export class AuthService {
       this.setAuthTimer(expiresIn / 1000);
       this.authStatusListener.next(true);
     }
-  }
-
-  private navigateToLogin(): void {
-    this.router.navigate(['/login']);
   }
 
   getAuthStatusListener(): Observable<boolean> {
