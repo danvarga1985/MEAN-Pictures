@@ -8,8 +8,10 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 
+// Using 'Node Environment Variables' - stored in nodemon.json
 // user-password ... database name(mean-app) ? auth db (authSource=admin)
-const uri = 'mongodb://root:root@localhost:27017/mean-app?authSource=admin';
+const uri = 'mongodb://' + process.env.MONGO_USER + ':' + process.env.MONGO_PASSWORD +
+  '@localhost:27017/mean-app?authSource=admin';
 
 
 mongoose.connect(uri, {
